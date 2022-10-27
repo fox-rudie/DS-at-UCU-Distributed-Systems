@@ -1,0 +1,50 @@
+version: "3.9"
+services:
+  logs-replication-main:
+    image: "replication:latest"
+    hostname: "replication-main"
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    environment:
+      IS_MAIN_REPLICA: "true"
+    networks:
+      - replication-internal
+    healthcheck:
+      test: curl http://localhost:8080/health
+      interval: 5s
+      timeout: 1s
+  logs-replication-secondary:
+    image: "replication:latest"
+    hostname: "replication-secondary"
+    restart: on-failure
+    depends_on:
+      logs-replication-main:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+    networks:
+      - replication-internal
+    healthcheck:
+      test: curl http://localhost:8080/health
+      interval: 5s
+      timeout: 1s
+  logs-replication-secondary-stupid:
+    image: "replication:latest"
+    hostname: "replication-secondary"
+    restart: on-failure
+    environment:
+      DELAY_IN_SECONDS: "2"
+    depends_on:
+      logs-replication-main:
+        condition: service_healthy
+    networks:
+      - replication-internal
+    healthcheck:
+      test: curl http://localhost:8080/health
+      interval: 5s
+      timeout: 1s
+
+networks:
+  replication-internal:
+    name: replication-internal

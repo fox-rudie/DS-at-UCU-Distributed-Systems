@@ -1,0 +1,70 @@
+plugins {
+	id 'org.springframework.boot' version '3.0.0-SNAPSHOT'
+	id 'io.spring.dependency-management' version '1.1.0'
+	id "com.palantir.docker" version "0.34.0"
+	id 'com.palantir.docker-compose' version '0.34.0'
+	id 'java'
+}
+
+group = 'com.rudie'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
+}
+
+dependencies {
+	implementation "org.apache.commons:commons-lang3:3.12.0"
+	implementation 'org.apache.commons:commons-collections4:4.4'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator:2.7.5'
+
+	compileOnly 'org.projectlombok:lombok'
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+task unpack(type: Copy) {
+	dependsOn bootJar
+	from(zipTree(tasks.bootJar.outputs.files.singleFile))
+	into("build/dependency")
+}
+
+docker {
+	clean
+	name "replication"
+	copySpec.from(tasks.unpack.outputs).into("dependency")
+	buildArgs(['DEPENDENCY': "dependency"])
+}
+
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.register('clean-docker-start') {
+	dependsOn 'clean'
+	dependsOn 'docker'
+	dependsOn 'dockerComposeUp'
+	tasks.findByName('docker').shouldRunAfter('clean')
+	tasks.findByName('dockerComposeUp').shouldRunAfter('docker')
+}
