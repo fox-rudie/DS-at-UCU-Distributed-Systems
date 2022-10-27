@@ -15,6 +15,6 @@ In docker-compose, we have three services:
 - The first one (logs-replication-main) is main node
 - The second one (logs-replication-secondary) is the secondary replica;
 - For the test simulation, we also have the third one (logs-replication-secondary-stupid). 
-  You can modify the environment variable to `DELAY_IN_SECONDS` to simulate the delay.
+  You can modify the environment variable `DELAY_IN_SECONDS` to simulate the delay.
 
 The solution also mechanism for the registration of the secondary nodes.
