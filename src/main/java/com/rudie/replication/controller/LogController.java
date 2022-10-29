@@ -2,6 +2,7 @@ package com.rudie.replication.controller;
 
 import com.rudie.replication.model.LogMessage;
 import com.rudie.replication.service.main.ReplicationService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,8 +20,10 @@ public class LogController {
     ReplicationService replicationService;
 
     @PostMapping
-    public ResponseEntity<Void> appendLogs(@RequestBody LogMessage logMessage) {
-        replicationService.replicate(logMessage);
+    public ResponseEntity<Void> appendLogs(@RequestBody LogMessage logMessage,
+                                           @RequestParam (defaultValue = "1") int writeConcert,
+                                           HttpServletResponse response) {
+        replicationService.replicate(logMessage, writeConcert, response);
         return ResponseEntity.ok().build();
     }
 
