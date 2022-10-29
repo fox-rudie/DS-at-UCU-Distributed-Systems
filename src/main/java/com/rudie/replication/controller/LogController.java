@@ -21,9 +21,8 @@ public class LogController {
 
     @PostMapping
     public ResponseEntity<Void> appendLogs(@RequestBody LogMessage logMessage,
-                                           @RequestParam (defaultValue = "1") int writeConcert,
-                                           HttpServletResponse response) {
-        replicationService.replicate(logMessage, writeConcert, response);
+                                           @RequestParam (defaultValue = "1") int writeConcert) {
+        replicationService.replicate(logMessage, writeConcert);
         return ResponseEntity.ok().build();
     }
 

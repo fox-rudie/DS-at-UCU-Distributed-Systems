@@ -3,7 +3,6 @@ package com.rudie.replication.service.main;
 import com.rudie.replication.model.LogMessage;
 import com.rudie.replication.registry.main.NodeManager;
 import com.rudie.replication.service.LogRepository;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -28,9 +27,7 @@ public class ReplicationService {
 
     @SneakyThrows
     public void replicate(LogMessage logMessage,
-                          int writeConcert,
-                          HttpServletResponse response) {
-//        AtomicInteger realConcert = new AtomicInteger(0);
+                          int writeConcert) {
         List<LogRepository> repositories = nodeManager.getRepositories();
 
         CountDownLatch countDown = new CountDownLatch(writeConcert);
