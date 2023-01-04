@@ -23,11 +23,13 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+	implementation 'org.mapstruct:mapstruct:1.5.3.Final'
 	implementation "org.apache.commons:commons-lang3:3.12.0"
 	implementation 'org.apache.commons:commons-collections4:4.4'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator:2.7.5'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator:3.0.1'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
 	compileOnly 'org.projectlombok:lombok'
@@ -36,7 +38,9 @@ dependencies {
 
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
 
+	testAnnotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

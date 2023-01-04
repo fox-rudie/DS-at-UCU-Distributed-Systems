@@ -1,6 +1,6 @@
 package com.rudie.replication.service.main;
 
-import com.rudie.replication.model.LogMessage;
+import com.rudie.replication.model.Message;
 import com.rudie.replication.model.Node;
 import com.rudie.replication.service.LogRepository;
 import lombok.AccessLevel;
@@ -14,9 +14,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -36,13 +37,13 @@ public class RemoteRepository implements LogRepository {
     }
 
     @Override
-    public boolean save(LogMessage logMessage) {
-        log.debug("[MAIN] Replicating log message with id {} to node {}", logMessage.getId(), node.getIpAddress());
+    public boolean save(Message message) {
+        log.debug("[MAIN] Replicating log message with id {} to node {}", message.getId(), node.getIpAddress());
 
         Instant start = Instant.now();
-        restTemplate.postForEntity(url, logMessage, Void.class);
+        restTemplate.postForEntity(url, message, Void.class);
         log.debug("[MAIN] Successfully replicated message with id {} to node {}. Time elapsed: {}",
-                logMessage.getId(),
+                message.getId(),
                 node.getIpAddress(),
                 Duration.between(start, Instant.now()).toMillis());
 
@@ -50,20 +51,20 @@ public class RemoteRepository implements LogRepository {
     }
 
     @Override
-    public List<LogMessage> getAll() {
+    public Set<Message> getAll() {
         log.debug("[MAIN] Trying to fetch logs from remote log repository on node {}", node.getIpAddress());
 
         Instant start = Instant.now();
 
-        ResponseEntity<LogMessage[]> remoteLogs = restTemplate.getForEntity(url, LogMessage[].class);
-        List<LogMessage> logMessages = Arrays.asList(Objects.requireNonNull(remoteLogs.getBody(),
-                "[MAIN] Failed to receive logs from remote repository on node " + node.getIpAddress()));
+        ResponseEntity<Message[]> remoteLogs = restTemplate.getForEntity(url, Message[].class);
+        Set<Message> messages = Stream.of(Objects.requireNonNull(remoteLogs.getBody(),
+                "[MAIN] Failed to receive logs from remote repository on node " + node.getIpAddress())).collect(Collectors.toSet());
 
         log.debug("[MAIN] Successfully fetched {} logs from node {}. Time elapsed: {}",
-                logMessages.size(),
+                messages.size(),
                 node.getIpAddress(),
                 Duration.between(start, Instant.now()).get(ChronoUnit.MILLIS));
 
-        return logMessages;
+        return messages;
     }
 }

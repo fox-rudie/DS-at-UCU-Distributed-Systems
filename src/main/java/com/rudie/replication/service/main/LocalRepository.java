@@ -1,7 +1,7 @@
 package com.rudie.replication.service.main;
 
 import com.rudie.replication.configuration.ReplicationLogProperties;
-import com.rudie.replication.model.LogMessage;
+import com.rudie.replication.model.Message;
 import com.rudie.replication.service.LogRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -19,20 +19,22 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PROTECTED)
 public class LocalRepository implements LogRepository {
-    private static final List<LogMessage> logs = new LinkedList<>();
+    private static final Set<Message> logs = new LinkedHashSet<>();
     ReplicationLogProperties properties;
 
     @Override
     @SneakyThrows
-    public boolean save(LogMessage logMessage) {
-        logs.add(logMessage);
-        log.debug("[REPOSITORY] Saved log message {}", logMessage);
-        delayIfPresent();
-        return true;
+    public boolean save(Message message) {
+        if (logs.add(message)) {
+            log.debug("[REPOSITORY] Saved log message {}", message);
+            delayIfPresent();
+            return true;
+        }
+        throw new RuntimeException("Duplicate ids are not allowed");
     }
 
     @Override
-    public List<LogMessage> getAll() {
+    public Set<Message> getAll() {
         log.debug("[REPOSITORY] Returning {} log records", logs.size());
         return logs;
     }

@@ -1,6 +1,6 @@
 package com.rudie.replication.service.main;
 
-import com.rudie.replication.model.LogMessage;
+import com.rudie.replication.model.Message;
 import com.rudie.replication.registry.main.NodeManager;
 import com.rudie.replication.service.LogRepository;
 import lombok.AccessLevel;
@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
@@ -26,7 +27,7 @@ public class ReplicationService {
 
 
     @SneakyThrows
-    public void replicate(LogMessage logMessage,
+    public void replicate(Message message,
                           int writeConcert) {
         List<LogRepository> repositories = nodeManager.getRepositories();
 
@@ -36,16 +37,20 @@ public class ReplicationService {
         repositories.stream().parallel()
                 .forEach(repository -> CompletableFuture
                         .runAsync(() -> {
-                            repository.save(logMessage);
+                            repository.save(message);
                             log.debug("[REPLICATION] Counting down...");
                             countDown.countDown();
+                        }).whenComplete((result, exception) -> {
+                            if (exception != null) {
+                                log.error("[REPLICATION] Error while saving {}", exception.getMessage());
+                            }
                         }));
 
         countDown.await();
         log.debug("[REPLICATION] Count down log released.");
     }
 
-    public List<LogMessage> getLogMessages() {
+    public Set<Message> getLogMessages() {
         return nodeManager.getRepositories()
                 .get(0)
                 .getAll();

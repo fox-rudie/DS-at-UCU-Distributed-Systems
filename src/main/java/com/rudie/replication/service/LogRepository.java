@@ -1,10 +1,10 @@
 package com.rudie.replication.service;
 
-import com.rudie.replication.model.LogMessage;
+import com.rudie.replication.model.Message;
 
-import java.util.List;
+import java.util.Set;
 
 public interface LogRepository {
-    boolean save(LogMessage logMessage);
-    List<LogMessage> getAll();
+    boolean save(Message message);
+    Set<Message> getAll();
 }
