@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,14 +27,19 @@ public class ReplicationService {
 
     RestTemplate restTemplate;
     NodeManager nodeManager;
+    RetryTemplate retryTemplate;
 
     AtomicLong idGenerator = new AtomicLong(1);
 
-
     @SneakyThrows
-    public void replicate(Message message,
-                          int writeConcert) {
-        List<LogRepository> repositories = nodeManager.getRepositories();
+    public void replicateWithRetry(Message message,
+                                   int writeConcert) {
+        List<LogRepository> repositories = nodeManager.getHealthyRepositories();
+
+        if (repositories.size() < writeConcert) {
+            throw new RuntimeException("There is no quorum (only read-mode). " +
+                    "Not enough nodes. Write concern: " + writeConcert + ", healthy nodes count: " + repositories.size());
+        }
 
         if (Objects.isNull(message.getId())) {
             message.setId(idGenerator.getAndIncrement());
@@ -44,22 +50,25 @@ public class ReplicationService {
 
         repositories.stream().parallel()
                 .forEach(repository -> CompletableFuture
-                        .runAsync(() -> {
-                            repository.save(message);
-                            log.debug("[REPLICATION] Counting down...");
-                            countDown.countDown();
-                        }).whenComplete((result, exception) -> {
-                            if (exception != null) {
-                                log.error("[REPLICATION] Error while saving {}", exception.getMessage());
+                        .runAsync(() -> retryTemplate.execute((ctx) -> {
+                            if (ctx.getRetryCount() > 1) {
+                                log.debug("[REPLICATION] Trying to save {} {} time.", message, ctx.getRetryCount());
                             }
-                        }));
+                            repository.save(message);
+
+                            log.debug("[REPLICATION] Counting down...");
+
+                            countDown.countDown();
+                            return true;
+                        }))
+                );
 
         countDown.await();
         log.debug("[REPLICATION] Count down log released.");
     }
 
     public Set<Message> getLogMessages() {
-        return nodeManager.getRepositories()
+        return nodeManager.getHealthyRepositories()
                 .get(0)
                 .getAll();
     }

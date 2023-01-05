@@ -1,14 +1,11 @@
 package com.rudie.replication.controller;
 
-import com.rudie.replication.dto.MessageDTO;
-import com.rudie.replication.mapping.MessageMapper;
 import com.rudie.replication.model.Message;
 import com.rudie.replication.service.main.ReplicationService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.mapstruct.factory.Mappers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -20,26 +17,25 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/log")
+@RequestMapping("/api/private/log")
 @FieldDefaults(makeFinal = true, level = AccessLevel.PROTECTED)
-public class LogController {
+public class PrivateLogController {
 
     ReplicationService replicationService;
-    MessageMapper messageMapper = Mappers.getMapper(MessageMapper.class);
 
     @PostMapping
-    public ResponseEntity<Void> appendLogs(@Valid @RequestBody MessageDTO messageDTO,
+    public ResponseEntity<Void> appendLogs(@Valid @RequestBody Message message,
                                            @RequestParam (defaultValue = "1") int writeConcert) {
-        replicationService.replicateWithRetry(messageMapper.map(messageDTO), writeConcert);
+        replicationService.replicateWithRetry(message, writeConcert);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping
-    public ResponseEntity<Set<MessageDTO>> getLogs() {
+    public ResponseEntity<Set<Message>> getLogs() {
         Set<Message> logMessages = replicationService.getLogMessages().stream()
                 .sorted(Comparator.comparingLong(Message::getId))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return ResponseEntity.ok(messageMapper.map(logMessages));
+        return ResponseEntity.ok(logMessages);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -52,15 +48,6 @@ public class LogController {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        return errors;
-    }
-
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(RuntimeException.class)
-    public Map<String, String> handleValidationExceptions(
-            RuntimeException ex) {
-        Map<String, String> errors = new HashMap<>();
-        errors.put("error", ex.getMessage());
         return errors;
     }
 }

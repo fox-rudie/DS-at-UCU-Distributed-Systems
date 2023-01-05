@@ -2,6 +2,7 @@ package com.rudie.replication.service.main;
 
 import com.rudie.replication.model.Message;
 import com.rudie.replication.model.Node;
+import com.rudie.replication.model.Status;
 import com.rudie.replication.service.LogRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,15 +25,15 @@ import java.util.stream.Stream;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PROTECTED)
 public class RemoteRepository implements LogRepository {
     protected final Node node;
-    protected final RestTemplate restTemplate;
     protected final String url;
+    protected final RestTemplate restTemplate;
 
     public RemoteRepository(Node node, RestTemplate restTemplate) {
         this.node = node;
         this.restTemplate = restTemplate;
         this.url = UriComponentsBuilder.fromHttpUrl(node.getIpAddress())
                 .port(node.getPort())
-                .path("/api/log")
+                .path("/api/private/log")
                 .build().toUriString();
     }
 
@@ -48,6 +49,20 @@ public class RemoteRepository implements LogRepository {
                 Duration.between(start, Instant.now()).toMillis());
 
         return true;
+    }
+
+    @Override
+    public Status getStatus() {
+        String healthCheckUrl = UriComponentsBuilder.fromHttpUrl(node.getIpAddress())
+                .port(node.getPort())
+                .path("/health")
+                .build().toUriString();
+
+        ResponseEntity<Void> response = restTemplate.getForEntity(healthCheckUrl, Void.class);
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return Status.HEALTHY;
+        }
+        return Status.UNHEALTHY;
     }
 
     @Override

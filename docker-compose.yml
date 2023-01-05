@@ -12,7 +12,7 @@ services:
       - replication-internal
     healthcheck:
       test: curl http://localhost:8080/health
-      interval: 5s
+      interval: 10s
       timeout: 1s
   logs-replication-secondary:
     image: "replication:latest"
@@ -22,7 +22,7 @@ services:
       logs-replication-main:
         condition: service_healthy
     deploy:
-      replicas: 2
+      replicas: 1
     networks:
       - replication-internal
     healthcheck:

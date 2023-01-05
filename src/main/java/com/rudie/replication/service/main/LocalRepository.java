@@ -2,6 +2,7 @@ package com.rudie.replication.service.main;
 
 import com.rudie.replication.configuration.ReplicationLogProperties;
 import com.rudie.replication.model.Message;
+import com.rudie.replication.model.Status;
 import com.rudie.replication.service.LogRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -30,13 +32,24 @@ public class LocalRepository implements LogRepository {
             delayIfPresent();
             return true;
         }
-        throw new RuntimeException("Duplicate ids are not allowed");
+        log.error("[REPOSITORY] Duplicate ids are not allowed");
+        return false;
     }
 
     @Override
     public Set<Message> getAll() {
         log.debug("[REPOSITORY] Returning {} log records", logs.size());
         return logs;
+    }
+
+    @Override
+    public Status getStatus() {
+        return Status.HEALTHY;
+    }
+
+    public void saveAll(List<Message> messages) {
+        log.debug("[REPOSITORY] Recovering messages {}...", messages);
+        logs.addAll(messages);
     }
 
     @SneakyThrows
